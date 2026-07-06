@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<title>TIME TO CIGARRO</title>
+<style>
+  :root{
+    --rojo:#e3000f;
+    --negro:#111;
+    --bg:#0a0a0a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom);
+    overflow:hidden;
+    transition:background .12s;
+  }
+  body.alarmando{animation:flash .5s steps(1) infinite;}
+  @keyframes flash{0%{background:#2a0000;}50%{background:#7a0000;}}
+
+  .pictograma{
+    width:min(70vw,320px);aspect-ratio:1;position:relative;margin-bottom:34px;
+    filter:drop-shadow(0 8px 30px rgba(227,0,15,.35));
+  }
+  .rombo{
+    position:absolute;inset:0;background:#fff;
+    border:min(3.5vw,16px) solid var(--rojo);
+    border-radius:14px;transform:rotate(45deg);
+  }
+  .contenido{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  }
+  svg{width:58%;height:58%;}
+
+  h1{font-size:clamp(20px,6vw,30px);font-weight:800;letter-spacing:.5px;text-align:center;}
+  p.sub{margin-top:8px;color:#9a9a9a;font-size:14px;text-align:center;max-width:280px;line-height:1.4;}
+
+  .btn{
+    margin-top:40px;border:none;border-radius:100px;
+    padding:18px 46px;font-size:18px;font-weight:700;
+    background:var(--rojo);color:#fff;cursor:pointer;
+    box-shadow:0 6px 24px rgba(227,0,15,.45);
+    transition:transform .1s,background .2s;
+  }
+  .btn:active{transform:scale(.96);}
+  .btn.parar{background:#333;box-shadow:none;}
+
+  .estado{margin-top:22px;font-size:15px;color:#ff6b6b;font-weight:600;min-height:20px;}
+</style>
+</head>
+<body>
+  <div class="pictograma">
+    <div class="rombo"></div>
+    <div class="contenido">
+      <svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
+        <!-- humo -->
+        <path d="M40 6 q-6 5 0 10 q6 5 0 10" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+        <path d="M52 4 q-6 5 0 10 q6 5 0 10" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+        <!-- cigarrillo -->
+        <rect x="14" y="38" width="56" height="9" rx="1.5" fill="#111"/>
+        <rect x="70" y="38" width="5" height="9" fill="#111"/>
+        <rect x="77" y="38" width="5" height="9" fill="#111"/>
+        <rect x="83" y="38" width="3" height="9" fill="#111"/>
+      </svg>
+    </div>
+  </div>
+
+  <h1>Alarma de Incendios</h1>
+  <p class="sub">Necesidad de fumar · Peligro falta de fuego</p>
+
+  <button id="btn" class="btn">🔔 Activar alarma</button>
+  <div class="estado" id="estado"></div>
+
+<script>
+let ctx,intervalo,sonando=false;
+const btn=document.getElementById('btn');
+const estado=document.getElementById('estado');
+
+function tono(){
+  const t=ctx.currentTime;
+  const o=ctx.createOscillator();
+  const g=ctx.createGain();
+  o.type='square';
+  // sirena que sube y baja
+  o.frequency.setValueAtTime(650,t);
+  o.frequency.linearRampToValueAtTime(1050,t+0.5);
+  o.frequency.linearRampToValueAtTime(650,t+1.0);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(0.4,t+0.05);
+  g.gain.setValueAtTime(0.4,t+0.9);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+1.0);
+  o.connect(g);g.connect(ctx.destination);
+  o.start(t);o.stop(t+1.0);
+  if(navigator.vibrate)navigator.vibrate([400,150,400]);
+}
+
+function arrancar(){
+  if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();
+  if(ctx.state==='suspended')ctx.resume();
+  sonando=true;
+  document.body.classList.add('alarmando');
+  btn.textContent='⏹ Detener';
+  btn.classList.add('parar');
+  estado.textContent='VAMOS A FUMAR';
+  tono();
+  intervalo=setInterval(tono,1000);
+}
+
+function parar(){
+  sonando=false;
+  clearInterval(intervalo);
+  document.body.classList.remove('alarmando');
+  btn.textContent='FUMAR YA';
+  btn.classList.remove('parar');
+  estado.textContent='';
+  if(navigator.vibrate)navigator.vibrate(0);
+}
+
+btn.addEventListener('click',()=>sonando?parar():arrancar());
+</script>
+</body>
+</html>
